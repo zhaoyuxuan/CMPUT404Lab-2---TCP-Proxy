@@ -1,4 +1,5 @@
 import socket, time, sys
+from multiprocessing import Process
 
 HOST = ""
 PORT = 8001
@@ -32,15 +33,19 @@ def main():
 
                 proxy_end.connect((remote_ip, port))
 
-                send_full_data = conn.recv(BUFFER_SIZE)
-
-                proxy_end.sendall(send_full_data)
-                proxy_end.shutdown(socket.SHUT_WR)
+                p = Process(target=handle_request, args=(conn, addr, proxy_end))
+                p.daemon = True
+                p.start()
+                print("Started Process", p)
 
                 data = proxy_end.recv(BUFFER_SIZE)
                 conn.send(data)
             
             conn.close()
             
+def handle_request(conn, addr, proxy_end):
+    send_full_data = conn.recv(BUFFER_SIZE)
+    proxy_end.sendall(send_full_data)
+    proxy_end.shutdown(socket.SHUT_WR)
 
 main()
